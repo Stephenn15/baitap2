@@ -114,13 +114,83 @@ def add_student(conn):
 
     tk.Button(add_window, text="Add", command=save_student).pack()
 
-# Hiển thị menu chính
+# Chức năng tìm kiếm sinh viên
+def search_students(conn):
+    search_window = tk.Toplevel(root)
+    search_window.title("Search Students")
+
+    tk.Label(search_window, text="Student Name:").pack()
+    search_entry = tk.Entry(search_window)
+    search_entry.pack()
+
+    def perform_search():
+        name = search_entry.get()
+        cursor = conn.cursor()
+
+        # Tìm kiếm sinh viên theo tên (phần trăm % là wildcard trong LIKE)
+        query = "SELECT * FROM students WHERE name ILIKE %s"
+        cursor.execute(query, (f"%{name}%",))
+        results = cursor.fetchall()
+
+        if results:
+            for result in results:
+                # Hiển thị kết quả tìm kiếm
+                tk.Label(search_window, text=f"ID: {result[0]}, Name: {result[1]}, Email: {result[2]}, Age: {result[3]}").pack()
+        else:
+            tk.Label(search_window, text="No students found.").pack()
+
+        cursor.close()
+
+    tk.Button(search_window, text="Search", command=perform_search).pack()
+
+# Chức năng xóa sinh viên
+def delete_student(conn):
+    delete_window = tk.Toplevel(root)
+    delete_window.title("Delete Student")
+
+    tk.Label(delete_window, text="Student ID:").pack()
+    id_entry = tk.Entry(delete_window)
+    id_entry.pack()
+
+    def perform_delete():
+        student_id = id_entry.get()
+        if student_id:
+            cursor = conn.cursor()
+
+            # Kiểm tra xem sinh viên có tồn tại không
+            cursor.execute("SELECT * FROM students WHERE id = %s", (student_id,))
+            result = cursor.fetchone()
+
+            if result:
+                # Thực hiện xóa sinh viên
+                cursor.execute("DELETE FROM students WHERE id = %s", (student_id,))
+                conn.commit()
+
+                messagebox.showinfo("Success", f"Student with ID {student_id} deleted successfully!")
+                delete_window.destroy()
+            else:
+                messagebox.showwarning("Error", "Student not found!")
+
+            cursor.close()
+        else:
+            messagebox.showwarning("Input Error", "Please enter a student ID!")
+
+    tk.Button(delete_window, text="Delete", command=perform_delete).pack()
+
+
+# Hiển thị menu chính sau khi đăng nhập thành công
 def show_main_menu(conn):
     main_window = tk.Toplevel(root)
     main_window.title("Main Menu")
 
+    # Nút để tìm kiếm sinh viên
     tk.Button(main_window, text="Search Students", command=lambda: search_students(conn)).pack()
+    
+    # Nút để thêm sinh viên mới
     tk.Button(main_window, text="Add New Student", command=lambda: add_student(conn)).pack()
+
+    # Nút để xóa sinh viên
+    tk.Button(main_window, text="Delete Student", command=lambda: delete_student(conn)).pack()
 
 
 # Giao diện đăng nhập
